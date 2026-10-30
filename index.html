@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gamma Zeta House Tour</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Literata:opsz,wght@7..72,500..700&display=swap">
+<style>
+/*
+  Layout concept: a street-view style tour. One large photo stage with tappable
+  circles (arrows move you, "i" explains), a floor plan beside it, Next/Back below.
+  Blue and white are the chapter colors. Honey marks "you are here" everywhere
+  (star on the plan, current segment in the progress bar, pulse on hotspots).
+  Amber highlighted text and amber tags mark every placeholder.
+*/
+:root{
+  --bg:#F3F6FC; --surface:#FFFFFF; --ink:#13213F; --ink-2:#4A5879;
+  --accent:#1B4BB8; --btn:#1B4BB8; --on-btn:#FFFFFF;
+  --tint:#E2EBFB; --line:#C6D5F1;
+  --honey:#F0B03A; --honey-tint:#FFF0C6; --honey-ink:#654500;
+  --ph-a:#C9D9F5; --ph-b:#E6EEFB; --ph-stripe:rgba(27,75,184,.08);
+  --old-a:#E6D9BF; --old-b:#F4ECDB; --old-stripe:rgba(101,69,0,.09);
+  --seg-off:#D3E0F6; --seg-vis:#5B84DE;
+  --shadow:0 1px 2px rgba(19,33,63,.08),0 10px 28px rgba(19,33,63,.10);
+  --scrim:rgba(10,20,45,.58);
+  --serif:'Literata',Georgia,'Times New Roman',serif;
+  --sans:'Figtree',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C1630; --surface:#142146; --ink:#EAF0FF; --ink-2:#AFBCDD;
+    --accent:#8CB0FF; --btn:#3563DE; --on-btn:#FFFFFF;
+    --tint:#1D2F66; --line:#2E4283;
+    --honey-tint:#3B2F0E; --honey-ink:#FFD98A;
+    --ph-a:#1E3068; --ph-b:#2C437F; --ph-stripe:rgba(255,255,255,.06);
+    --old-a:#4A4030; --old-b:#5A4F3C; --old-stripe:rgba(255,255,255,.06);
+    --seg-off:#243468; --seg-vis:#6F9BFF;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C1630; --surface:#142146; --ink:#EAF0FF; --ink-2:#AFBCDD;
+  --accent:#8CB0FF; --btn:#3563DE; --on-btn:#FFFFFF;
+  --tint:#1D2F66; --line:#2E4283;
+  --honey-tint:#3B2F0E; --honey-ink:#FFD98A;
+  --ph-a:#1E3068; --ph-b:#2C437F; --ph-stripe:rgba(255,255,255,.06);
+  --old-a:#4A4030; --old-b:#5A4F3C; --old-stripe:rgba(255,255,255,.06);
+  --seg-off:#243468; --seg-vis:#6F9BFF;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:auto}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.55 var(--sans);-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+body.has-pager{padding-bottom:88px}
+h1,h2,h3{font-family:var(--serif);font-weight:600;margin:0;text-wrap:balance;color:var(--ink)}
+p{margin:0}
+button{font-family:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+h1:focus{outline:none}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.gutter{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.ic{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ic.fill{fill:currentColor;stroke:none}
+
+/* placeholder language: amber highlight for text, amber tag for images */
+mark.ph{background:var(--honey-tint);color:var(--honey-ink);padding:0 4px;border-radius:4px;border-bottom:1px dashed var(--honey-ink);-webkit-box-decoration-break:clone;box-decoration-break:clone}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:12px;border:2px solid var(--accent);background:var(--surface);color:var(--accent);font:600 1rem/1.1 var(--sans);cursor:pointer;text-decoration:none}
+.btn:hover{background:var(--tint)}
+.btn.primary{background:var(--btn);border-color:var(--btn);color:var(--on-btn)}
+.btn.primary:hover{background:var(--btn);filter:brightness(1.14)}
+.btn.sm{min-height:44px;padding:0 14px}
+.btn.lg{min-height:58px;font-size:1.125rem;padding:0 26px}
+.btn:disabled{opacity:.5;cursor:default}
+.grow{flex:1 1 auto;min-width:0}
+
+/* header */
+.head{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.head-row{max-width:1120px;margin:0 auto;display:flex;align-items:center;gap:10px;min-height:60px}
+.brand{display:flex;align-items:baseline;gap:12px;text-decoration:none;margin-right:auto;min-width:0}
+.greek{font:700 1.55rem/1 var(--serif);letter-spacing:.08em;color:var(--accent)}
+.brand-sub{display:none;font-size:.9375rem;color:var(--ink-2)}
+@media(min-width:600px){.brand-sub{display:inline}}
+.role-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:999px;border:2px solid var(--line);background:var(--tint);color:var(--ink);font:600 .9375rem/1 var(--sans);cursor:pointer;max-width:48vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.role-btn:hover{border-color:var(--accent)}
+
+/* progress */
+.progress{border-top:1px solid var(--line)}
+.prog-in{max-width:1120px;margin:0 auto;padding-block:8px 11px;display:grid;gap:7px}
+.prog-top{display:flex;align-items:center;gap:10px;min-height:32px}
+.prog-label{font-weight:700;white-space:nowrap}
+.prog-name{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;min-width:0;font-size:.9375rem}
+.prog-count{color:var(--ink-2);font-size:.9375rem;white-space:nowrap}
+.segs{display:grid;grid-template-columns:repeat(var(--n,9),minmax(0,1fr));gap:4px}
+.seg{height:8px;border-radius:4px;background:var(--seg-off)}
+.seg.v{background:var(--seg-vis)}
+.seg.c{background:var(--honey)}
+
+/* landing */
+.home{max-width:1060px;margin:0 auto;padding-block:20px 56px;display:grid;gap:26px;align-items:start}
+.hero{container-type:inline-size;position:relative;aspect-ratio:16/10;border-radius:20px;overflow:hidden;border:2px solid var(--line);margin:0;background:var(--ph-a)}
+.home-copy{display:grid;gap:14px;max-width:62ch}
+.home-copy h1{font-size:clamp(2.4rem,7vw,3.6rem);line-height:1.02;letter-spacing:-.01em}
+.home-copy .sub{font-size:1.125rem;color:var(--ink-2)}
+.home-copy h2{font-size:1.35rem;margin-top:10px}
+.lead{font-size:1.125rem}
+.start{display:grid;gap:14px;max-width:62ch}
+.roles-fs{border:0;padding:0;margin:0;min-width:0}
+.roles-fs legend{font:600 1.0625rem var(--sans);padding:0;margin-bottom:2px}
+.hint{color:var(--ink-2);font-size:.9375rem;margin-bottom:10px}
+.roles{display:flex;flex-wrap:wrap;gap:10px}
+.role{position:relative;display:inline-flex}
+.role input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.role span{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 18px;border-radius:999px;border:2px solid var(--line);background:var(--surface);font-weight:600;pointer-events:none}
+.role .tick{display:none;width:20px;height:20px}
+.role input:checked + span{border-color:var(--accent);background:var(--tint);color:var(--ink)}
+.role input:checked + span .tick{display:block;color:var(--accent)}
+.role input:focus-visible + span{outline:3px solid var(--accent);outline-offset:3px}
+.greet{font:600 1.125rem var(--serif);color:var(--accent)}
+.meta{color:var(--ink-2);font-size:.9375rem}
+@media(min-width:900px){
+  .home{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);grid-template-areas:"hero copy" "start copy";grid-template-rows:auto 1fr;column-gap:48px;padding-block:32px 64px}
+  .hero{grid-area:hero;aspect-ratio:16/10}
+  .home-copy{grid-area:copy}
+  .start{grid-area:start}
+}
+
+/* photo placeholders */
+.ph-photo{position:absolute;inset:0;background:repeating-linear-gradient(135deg,transparent 0 14px,var(--ph-stripe) 14px 16px),linear-gradient(160deg,var(--ph-a),var(--ph-b))}
+.ph-photo.older{background:repeating-linear-gradient(135deg,transparent 0 14px,var(--old-stripe) 14px 16px),linear-gradient(160deg,var(--old-a),var(--old-b))}
+.ph-tag{position:absolute;left:12px;top:12px;max-width:calc(100% - 24px);display:grid;gap:1px;padding:7px 10px;border-radius:10px;background:var(--honey-tint);color:var(--honey-ink);border:1px dashed var(--honey-ink);font-size:.8125rem;line-height:1.25}
+.ph-tag strong{font-weight:700}
+.ph-tag code{font:500 .8125rem/1.2 ui-monospace,Menlo,Consolas,monospace}
+.img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+@media(max-width:699px){.stage .ph-tag code{display:none}.stage .ph-tag{padding:5px 9px;max-width:56%}}
+
+/* tour layout */
+.tour{max-width:1120px;margin:0 auto;padding-block:18px 28px;display:grid;gap:16px;grid-template-columns:minmax(0,1fr);grid-template-areas:"stage" "thumbs"}
+.stage-wrap{grid-area:stage}
+.thumbs-wrap{grid-area:thumbs}
+.plan-col{grid-area:plan;display:none}
+@media(min-width:980px){
+  .tour{grid-template-columns:minmax(0,1fr) 372px;column-gap:32px;grid-template-areas:"stage plan" "thumbs plan";align-items:start;padding-block:26px 36px}
+  .plan-col{display:block;position:sticky;top:150px}
+  .only-sm{display:none!important}
+}
+
+.stage{position:relative;aspect-ratio:2/3;border-radius:20px;overflow:hidden;border:2px solid var(--line);background:var(--ph-a);container-type:inline-size}
+@media(min-width:700px){.stage{aspect-ratio:7/5}}
+.stage-photo{position:absolute;inset:0;cursor:zoom-in}
+.count{margin-left:auto;align-self:center;color:var(--ink-2);font-size:.9375rem;white-space:nowrap}
+.stage-tools{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.sbtn{min-height:46px;padding:0 16px;border-radius:999px;background:var(--surface);color:var(--ink);border:2px solid var(--line);font:600 .9375rem/1 var(--sans);display:inline-flex;gap:8px;align-items:center;cursor:pointer}
+.sbtn:hover{border-color:var(--accent)}
+.sbtn[aria-pressed="true"]{background:var(--honey-tint);color:var(--honey-ink);border-color:var(--honey-ink)}
+
+/* hotspots */
+.spot{position:absolute;width:0;height:0;padding:0;margin:0;border:0;background:none;overflow:visible;cursor:pointer;z-index:2;color:inherit}
+.spot .ico{position:absolute;left:-24px;top:-24px;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;box-shadow:var(--shadow);transition:transform .15s}
+.spot:hover .ico{transform:scale(1.08)}
+.spot .ico svg{width:24px;height:24px}
+.spot.nav .ico{background:var(--surface);border:3px solid var(--btn);color:var(--accent)}
+.spot.info .ico{background:var(--btn);color:var(--on-btn);border:3px solid var(--surface);font:italic 700 1.4rem/1 var(--serif)}
+.spot.finish .ico{background:var(--honey);color:#2A1D00;border:3px solid var(--surface)}
+.spot .ico::after{content:"";position:absolute;inset:-8px;border-radius:50%;border:2px solid var(--honey)}
+@media(prefers-reduced-motion:no-preference){.spot .ico::after{animation:pulse 2.4s ease-out infinite}}
+@keyframes pulse{0%{transform:scale(.8);opacity:.95}100%{transform:scale(1.2);opacity:0}}
+.spot .lbl{position:absolute;top:0;transform:translateY(-50%);width:max-content;background:var(--surface);color:var(--ink);padding:5px 11px;border-radius:12px;font:600 .875rem/1.2 var(--sans);box-shadow:var(--shadow)}
+.spot.r .lbl{left:32px;text-align:left;max-width:min(150px,max(76px,calc(100cqw * (100 - var(--x)) / 100 - 42px)))}
+.spot.l .lbl{right:32px;text-align:right;max-width:min(150px,max(76px,calc(100cqw * var(--x) / 100 - 42px)))}
+.spot.b .lbl{left:0;top:32px;transform:translateX(-50%);text-align:center;max-width:150px}
+.spot:focus-visible{outline:none}
+.spot:focus-visible .ico{outline:3px solid var(--honey);outline-offset:4px}
+.d-right svg{rotate:90deg}.d-left svg{rotate:-90deg}.d-down svg{rotate:180deg}.d-upleft svg{rotate:-45deg}.d-upright svg{rotate:45deg}
+
+.note{position:absolute;left:12px;right:12px;top:12px;z-index:5;background:var(--surface);border-radius:16px;padding:14px 52px 14px 16px;box-shadow:var(--shadow);border:2px solid var(--line);display:grid;gap:4px}
+.note strong{font:600 1.1rem var(--serif)}
+.note p{font-size:1rem}
+.note-x{position:absolute;right:6px;top:6px;width:44px;height:44px;border-radius:50%;border:0;background:none;color:var(--ink);cursor:pointer;display:grid;place-items:center}
+.note-x:hover{background:var(--tint)}
+
+.tap-hint{font-size:.9375rem;color:var(--ink-2);margin-top:10px}
+.thumbs{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:10px}
+.thumb{display:grid;gap:6px;padding:0;border:0;background:none;text-align:left;cursor:pointer;color:var(--ink)}
+.thumb-img{position:relative;display:block;aspect-ratio:4/3;border-radius:12px;overflow:hidden;border:3px solid var(--line)}
+.thumb[aria-pressed="true"] .thumb-img{border-color:var(--btn);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--btn)}
+.thumb:hover .thumb-img{border-color:var(--accent)}
+.thumb .ph-tag{left:6px;top:6px;padding:3px 7px;font-size:.75rem}
+.thumb .ph-tag span,.thumb .ph-tag code{display:none}
+.thumb-cap{font-size:.9375rem;font-weight:500;line-height:1.25}
+
+ .ph-note{font-size:.9375rem;color:var(--ink-2);margin-top:8px}
+
+/* description card, laid over the photo */
+.card{position:absolute;left:10px;right:10px;bottom:10px;z-index:3;max-height:50%;display:flex;flex-direction:column;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.card-head{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 16px;min-height:56px}
+.card-head h1{flex:1;min-width:0;font-size:1.4rem;line-height:1.15}
+.card-toggle{width:44px;height:44px;flex:none;border-radius:50%;border:2px solid var(--line);background:var(--surface);color:var(--accent);cursor:pointer;display:grid;place-items:center}
+.card-toggle:hover{background:var(--tint);border-color:var(--accent)}
+.card-toggle .ic{transition:rotate .15s}
+.card[data-open="false"] .card-toggle .ic{rotate:180deg}
+.card-body{padding:0 16px 14px;overflow:auto;display:grid;gap:10px;min-height:0}
+.card[data-open="false"]{right:auto;max-width:calc(100% - 20px)}
+.card[data-open="false"] .card-body{display:none}
+.card .desc{font-size:1rem;line-height:1.5}
+.card .trad{background:var(--tint);border-radius:10px;padding:8px 12px;max-width:none;display:block;font-size:.9375rem}
+.card .trad strong{color:var(--accent);margin-right:6px}
+@media(min-width:700px){.card{left:16px;bottom:16px;right:auto;width:min(450px,calc(100% - 32px));max-height:46%}.card-head h1{font-size:1.6rem}.card .desc{font-size:1.0625rem}}
+
+/* floor plan */
+.plan-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:12px}
+.plan-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.plan-head h2{font-size:1.3rem}
+.plan-count{font-size:.9375rem;color:var(--ink-2)}
+.plan-help{font-size:.9375rem;color:var(--ink-2)}
+.plan{display:grid;grid-template-columns:.8fr .8fr 1.2fr 1.2fr 1.2fr;grid-template-rows:repeat(6,56px) auto;gap:6px;position:relative;grid-template-areas:". . kai kitchen yard" "lawn porch tv pool yard" "lawn porch living library yard" "steps porch entry hall hall" "start start start hall hall" "legend legend legend rooms rooms" "legend legend legend cap cap"}
+.plan > .room{z-index:1}
+.plan-block{grid-area:1 / 3 / 4 / 5;margin:-4px;border:2px dashed var(--line);border-radius:16px;pointer-events:none}
+.plan-apt{grid-area:4 / 4 / 7 / 6;margin:-4px;border:2px dashed var(--line);border-radius:16px;pointer-events:none}
+.plan-cap{grid-area:cap;font-size:.8125rem;line-height:1.25;color:var(--ink-2);text-align:center;align-self:start;padding-top:4px}
+.plan-steps{grid-area:steps;display:grid;place-items:center;border:2px dashed var(--line);border-radius:12px;font-size:.8125rem;color:var(--ink-2)}
+.start-here{grid-area:start;display:flex;align-items:center;gap:6px;border:0;background:none;color:var(--accent);font:700 1rem var(--sans);cursor:pointer;text-align:left;padding:0;min-height:44px}
+.start-here .ic{rotate:-45deg}
+.court{width:80%;height:40px;border:2px solid var(--line);border-radius:50%;margin-top:8px}
+.room.cur .court{border-color:rgba(255,255,255,.55)}
+.room{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 4px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:600 .875rem/1.15 var(--sans);text-align:center;cursor:pointer;min-width:0}
+.room:hover{border-color:var(--accent)}
+.rn{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--tint);color:var(--accent);font-size:.75rem;font-weight:700}
+.rs{position:absolute;right:4px;top:4px;width:18px;height:18px;display:grid;place-items:center}
+.rs .ic{width:16px;height:16px;stroke-width:3}
+.room.vis{background:var(--tint);border-color:var(--seg-vis)}
+.room.vis .rs{color:var(--accent)}
+.room.cur{background:var(--btn);border-color:var(--btn);color:var(--on-btn)}
+.room.cur .rn{background:rgba(255,255,255,.22);color:#fff}
+.room.cur .rs{color:var(--honey)}
+.room.cur .rs .ic{width:18px;height:18px}
+.legend{grid-area:legend;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;margin:0;padding:0;list-style:none;font-size:.875rem;color:var(--ink-2)}
+.legend li{display:flex;align-items:center;gap:6px}
+.sw{display:grid;place-items:center;width:22px;height:22px;border-radius:7px;border:2px solid var(--line);background:var(--surface)}
+.sw.c{background:var(--btn);border-color:var(--btn);color:var(--honey)}
+.sw.v{background:var(--tint);border-color:var(--seg-vis);color:var(--accent)}
+.sw .ic{width:14px;height:14px;stroke-width:3}
+
+/* pager */
+.pager{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--surface);border-top:1px solid var(--line);padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+.pager-in{max-width:1120px;margin:0 auto;display:flex;gap:10px}
+.pager .btn{min-height:52px;white-space:nowrap;padding:0 12px;gap:6px}
+.pager .primary{padding:0 14px}
+.nx{display:grid;text-align:left;line-height:1.15;min-width:0}
+.nx small{font-size:.8125rem;font-weight:500;opacity:.92}
+.nx b{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:699px){#pg-back span{display:none}#pg-back{padding:0 14px}}
+.pager .primary span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* done */
+.done{max-width:1060px;margin:0 auto;padding-block:28px 64px;display:grid;gap:26px}
+.done-top{display:grid;gap:10px;justify-items:start;max-width:62ch}
+.badge-ok{display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:var(--btn);color:var(--on-btn)}
+.badge-ok .ic{width:30px;height:30px;stroke-width:3}
+.done-top h1{font-size:clamp(2.2rem,6vw,3.2rem);line-height:1.04}
+.done-top p{font-size:1.125rem}
+.unseen{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.done-grid{display:grid;gap:22px}
+@media(min-width:900px){.done-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:32px}}
+.recap{display:grid;gap:14px}
+.recap h2,.learn h2{font-size:1.5rem}
+.trad-list{display:grid;gap:12px;margin:0;padding:0;list-style:none}
+.trad-item{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:6px;justify-items:start}
+.trad-item h3{font-size:1.15rem}
+.link-btn{background:none;border:0;padding:6px 0;min-height:44px;color:var(--accent);font:600 1rem var(--sans);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.learn{background:var(--btn);color:var(--on-btn);border-radius:20px;padding:24px;display:grid;gap:14px}
+.learn h2{color:var(--on-btn)}
+.learn .contact dt{color:rgba(255,255,255,.82)}
+.learn .contact{border-top-color:rgba(255,255,255,.28)}
+.learn .crow{border-bottom-color:rgba(255,255,255,.28)}
+.learn .copy{border-color:#fff;color:#fff;background:transparent}
+.learn .copy:hover{background:rgba(255,255,255,.16)}
+.learn a{color:#fff}
+.done-actions{display:flex;flex-wrap:wrap;gap:10px}
+
+/* contact list */
+.contact{margin:0;display:grid;border-top:1px solid var(--line)}
+.crow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:center}
+.crow dt{grid-column:1 / -1;font-size:.9375rem;color:var(--ink-2)}
+.crow dd{margin:0;min-width:0;overflow-wrap:anywhere;font-weight:500;font-size:1.0625rem}
+.copy{min-height:44px;padding:0 12px;border-radius:10px;border:2px solid var(--accent);background:var(--surface);color:var(--accent);font:600 .9375rem var(--sans);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.copy:hover{background:var(--tint)}
+
+/* dialogs */
+dialog{border:0;padding:0;border-radius:20px;background:var(--surface);color:var(--ink);width:calc(100% - 24px);max-width:540px;max-height:calc(100% - 24px);box-shadow:var(--shadow);overflow:auto}
+dialog::backdrop{background:var(--scrim)}
+.dlg-in{padding:22px;display:grid;gap:14px}
+.dlg-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.dlg-head h2{font-size:1.5rem}
+.x{width:44px;height:44px;flex:none;border-radius:50%;border:2px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;display:grid;place-items:center}
+.x:hover{background:var(--tint);border-color:var(--accent)}
+dialog.lb{max-width:min(980px,calc(100% - 24px))}
+.lb-photo{position:relative;aspect-ratio:3/2;border-radius:14px;overflow:hidden;border:2px solid var(--line)}
+.lb-bar{display:flex;align-items:center;gap:10px}
+.lb-cap{flex:1 1 auto;min-width:0;font-weight:600}
+.lb-cap small{display:block;font-weight:400;color:var(--ink-2);font-size:.9375rem}
+dialog.sheet{margin:auto 0 0;width:100%;max-width:none;max-height:90%;border-radius:22px 22px 0 0}
+dialog.sheet .dlg-in{padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+dialog.sheet .plan-card{border:0;padding:0}
+@media(min-width:700px){dialog.sheet{margin:auto;max-width:560px;border-radius:20px}}
+</style>
+
+<style>[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4L3 6.5v13L9 17l6 3 6-2.5v-13L15 7zM9 4v13M15 7v13"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6.5L21 7"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></symbol>
+  </defs>
+</svg>
+
+<header class="head" id="head">
+  <div class="gutter">
+    <div class="head-row">
+      <a class="brand" href="#home" aria-label="Beta Theta Pi, Gamma Zeta chapter. Go to the start page.">
+        <span class="greek">ΒΘΠ</span>
+        <span class="brand-sub">Gamma Zeta chapter, Whitman College</span>
+      </a>
+      <button class="role-btn" id="btn-role" data-act="open-role" hidden></button>
+      <button class="btn sm" id="btn-contact" data-act="open-contact" title="Contact and learn more">
+        <svg class="ic" aria-hidden="true"><use href="#i-mail"/></svg><span>Contact</span>
+      </button>
+    </div>
+  </div>
+  <div class="progress" id="progress" hidden>
+    <div class="gutter">
+      <div class="prog-in">
+        <div class="prog-top">
+          <span class="prog-label" id="prog-label" aria-live="polite"></span>
+          <span class="prog-name" id="prog-name"></span>
+          <span id="prog-right"></span>
+        </div>
+        <div class="segs" id="segs" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Screen 1, from sketch 1: header, photo, house intro, CS 267 project, House Tour button -->
+  <section id="v-home" hidden>
+    <div class="gutter">
+      <div class="home">
+        <figure class="hero" id="hero"></figure>
+        <div class="home-copy">
+          <h1 id="home-title" tabindex="-1">Come on in.</h1>
+          <p class="sub">The Beta Theta Pi house, Gamma Zeta chapter, Whitman College.</p>
+          <h2>About the house</h2>
+          <p class="lead"><mark class="ph">[Two or three sentences about the Gamma Zeta house and the chapter.]</mark> This tour walks through the shared rooms, the bedrooms and the yard. Start at the front door and follow the arrows, or jump to any room from the floor plan.</p>
+          <h2>About this tour</h2>
+          <p>This tour is a class project for CS 267, Human-Computer Interaction. It replaces the walk-through our chapter president gives in person, so people who cannot visit can still see the house. <mark class="ph">[Add the team names and course term.]</mark></p>
+        </div>
+        <div class="start">
+          <fieldset class="roles-fs">
+            <legend>Who is visiting?</legend>
+            <p class="hint">Optional. Everyone sees the same tour for now.</p>
+            <div class="roles" id="roles-home"></div>
+          </fieldset>
+          <p class="greet" id="greet" aria-live="polite" hidden></p>
+          <button class="btn primary lg" data-act="start">Start the house tour <svg class="ic" aria-hidden="true"><use href="#i-chev-r"/></svg></button>
+          <p class="meta" id="meta-count"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Screens 2 onward, from sketch 2: entrance, foyer, living room and the rest -->
+  <section id="v-tour" hidden>
+    <div class="gutter">
+      <div class="tour">
+        <div class="stage-wrap">
+          <div class="stage" id="stage"></div>
+          <div class="stage-tools" id="stage-tools"></div>
+          <p class="tap-hint" id="tap-hint"></p>
+          <p class="ph-note" id="ph-note"></p>
+        </div>
+        <div class="thumbs-wrap" id="thumbs"></div>
+        <aside class="plan-col" id="plan-col" aria-label="Floor plan"></aside>
+      </div>
+    </div>
+  </section>
+
+  <section id="v-done" hidden></section>
+</main>
+
+<nav class="pager" id="pager" aria-label="Tour steps" hidden>
+  <div class="gutter">
+    <div class="pager-in">
+      <button class="btn" id="pg-back" data-act="back"></button>
+      <button class="btn only-sm" data-act="open-map" aria-label="Open the floor plan"><svg class="ic" aria-hidden="true"><use href="#i-map"/></svg>Plan</button>
+      <button class="btn primary grow" id="pg-next" data-act="next"></button>
+    </div>
+  </div>
+</nav>
+
+<dialog id="dlg-contact" aria-labelledby="contact-title">
+  <div class="dlg-in">
+    <div class="dlg-head">
+      <h2 id="contact-title">Contact and learn more</h2>
+      <button class="x" data-act="close" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <p>Ask a member of the chapter anything the tour did not cover.</p>
+    <div id="contact-body"></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-role" aria-labelledby="role-title">
+  <div class="dlg-in">
+    <div class="dlg-head">
+      <h2 id="role-title">Who is visiting?</h2>
+      <button class="x" data-act="close" aria-label="Close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <p class="hint">Everyone sees the same tour for now. Your choice only changes the greeting.</p>
+    <div class="roles" id="roles-dlg"></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-map" class="sheet" aria-label="Floor plan">
+  <div class="dlg-in">
+    <div class="dlg-head">
+      <span></span>
+      <button class="x" data-act="close" aria-label="Close floor plan"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div id="sheet-plan"></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-lb" class="lb" aria-label="Photo viewer">
+  <div class="dlg-in" id="lb-body"></div>
+</dialog>
+
+<script>
+(function(){
+'use strict';
+
+/* ------------------------------------------------------------------
+   HOW TO REPLACE PLACEHOLDERS
+   1. Photos. Paste a URL or data URI next to the photo id below. Older
+      photos go in OLDER_IMAGES under the same id. Empty means "show the
+      labeled placeholder".
+   2. Text. Anything wrapped in [[double brackets]] shows as highlighted
+      placeholder text. Edit the strings in STOPS, TRADITION and CONTACT.
+   3. Hotspots. x and y are percentages of the photo. Move them to match
+      the real photo.
+   4. Per-role copy. Add text to a stop's byRole object, for example
+      byRole: { parent: "..." }. The tour uses it when that role is chosen
+      and falls back to desc otherwise.
+------------------------------------------------------------------- */
+const IMAGES = {
+  'hero':'',
+  'entry-1':'','entry-2':'','entry-3':'',
+  'living-1':'','living-2':'','living-3':'',
+  'tv-1':'','tv-2':'',
+  'kai-1':'','kai-2':'','kai-3':'',
+  'kitchen-1':'','kitchen-2':'',
+  'pool-1':'','pool-2':'',
+  'library-1':'','library-2':'',
+  'hall-1':'','hall-2':'',
+  'rooms-1':'','rooms-2':'',
+  'porch-1':'','porch-2':'','porch-3':'',
+  'lawn-1':'','lawn-2':'',
+  'yard-1':'','yard-2':'','yard-3':''
+};
+const OLDER_IMAGES = {};
+
+const ROLES = {
+  prospective:{label:'Prospective member', short:'Prospective', greeting:'Welcome, prospective member.'},
+  parent:{label:'Parent', short:'Parent', greeting:'Welcome, parent.'},
+  alum:{label:'Alum', short:'Alum', greeting:'Welcome back, alum.'}
+};
+
+const CONTACT = [
+  {label:'Chapter president', value:'[[Name of chapter president]]'},
+  {label:'Email', value:'[[email address]]'},
+  {label:'Phone or text', value:'[[phone number]]'},
+  {label:'Instagram', value:'[[@handle]]'},
+  {label:'Recruitment info', value:'[[link to the recruitment page]]'},
+  {label:'Alumni', value:'[[link to the alumni newsletter]]'},
+  {label:'House address', value:'[[street address, Walla Walla, WA]]'}
+];
+
+const nav=(x,y,dir,label,to)=>({k:'nav',x,y,dir,label,to});
+const info=(x,y,title,text)=>({k:'info',x,y,title,text:text||'[[Add a short note about this part of the photo.]]'});
+const fin=(x,y,label)=>({k:'finish',x,y,label});
+
+const STOPS = [
+  {id:'entry', name:'Main entry', plan:'Main entry',
+   desc:'Everyone comes in through this door, members and guests alike. Just inside, the foyer holds the chapter composites, a wall of class photos going back [[first year]]. [[Describe what a visitor sees and does here, such as signing the guest book.]]',
+   byRole:{},
+   tradition:{name:'[[Example: the composite wall]]', text:'[[Describe the tradition, for example how new members are added each year.]]'},
+   photos:[
+    {id:'entry-1', label:'Entrance, front door', hot:[ nav(50,30,'up','Enter the house','tour-entry-2') ]},
+    {id:'entry-2', label:'Foyer', hot:[
+      info(12,36,'Chapter composites','[[Describe the composite photos and how far back they go.]]'),
+      nav(74,24,'up','Living area of the house','tour-hall'),
+      nav(30,40,'upleft','Public areas of the house','tour-living'),
+      info(92,24,'Left wall') ]},
+    {id:'entry-3', label:'Foyer, composite wall', hot:[ info(50,32,'Composite wall','[[Describe one composite, such as the oldest or newest class.]]'), info(80,38,'Guest book') ]}
+   ]},
+  {id:'living', name:'Living room', plan:'Living room',
+   desc:'The living room has a piano, couches and room for the whole chapter. It is where the house relaxes between classes and on weekends. [[Name a tradition or event held here and when it happens.]]',
+   byRole:{},
+   tradition:{name:'[[Example: movie night]]', text:'[[Describe when it happens and who comes.]]'},
+   photos:[
+    {id:'living-1', label:'Living room', hot:[
+      nav(68,26,'up','To the TV lounge','tour-tv'),
+      nav(26,40,'down','Back to the main entry','tour-entry'),
+      info(90,38,'Piano and couches') ]},
+    {id:'living-2', label:'Piano', hot:[ info(50,32,'Piano') ]},
+    {id:'living-3', label:'Couches', hot:[ info(50,32,'Couches') ]}
+   ]},
+  {id:'tv', name:'TV lounge', plan:'TV lounge',
+   desc:'The TV lounge is where members watch games and shows together. [[Describe the screen, the seating and how many people fit.]] [[Name a tradition or event held here and when it happens.]]',
+   byRole:{},
+   tradition:{name:'[[Example: game-day watch parties]]', text:'[[Describe the tradition.]]'},
+   photos:[
+    {id:'tv-1', label:'TV lounge', hot:[
+      nav(68,26,'up','To the Kai table','tour-kai'),
+      nav(26,40,'down','Back to the living room','tour-living'),
+      info(90,38,'The screen') ]},
+    {id:'tv-2', label:'Lounge seating', hot:[ info(50,32,'Seating') ]}
+   ]},
+  {id:'kai', name:'Kai table', plan:'Kai table',
+   desc:'The Kai table is our communal dining table and the social center of the house. Members eat here together, and guests are welcome to pull up a chair. [[Say how many people it seats and when the house eats together.]]',
+   byRole:{},
+   tradition:{name:'[[Example: weekly house dinner]]', text:'[[Describe who cooks, what day it happens and who is invited.]]', highlight:true},
+   photos:[
+    {id:'kai-1', label:'The Kai table', hot:[
+      nav(68,26,'up','To the kitchen','tour-kitchen'),
+      nav(26,40,'down','Back to the TV lounge','tour-tv'),
+      info(90,38,'The Kai table','[[Tell the story of the table and how it got its name.]]') ]},
+    {id:'kai-2', label:'Dinner at the table', hot:[ info(50,32,'Dinner') ]},
+    {id:'kai-3', label:'Table detail', hot:[ info(50,32,'Table detail') ]}
+   ]},
+  {id:'kitchen', name:'Kitchen', plan:'Kitchen',
+   desc:'Meals for the house come out of this kitchen. [[Describe who cooks and how the kitchen is kept clean and safe.]] [[Name a kitchen tradition or event, if there is one.]]',
+   byRole:{},
+   tradition:{name:'[[Example: Sunday pancakes]]', text:'[[Describe the tradition.]]'},
+   photos:[
+    {id:'kitchen-1', label:'Kitchen', hot:[
+      nav(68,26,'up','To the pool table','tour-pool'),
+      nav(26,40,'down','Back to the Kai table','tour-kai'),
+      info(90,38,'Cleaning schedule','[[Describe how the house keeps the kitchen clean.]]') ]},
+    {id:'kitchen-2', label:'Pantry and storage', hot:[ info(50,32,'Pantry') ]}
+   ]},
+  {id:'pool', name:'Pool table', plan:'Pool table',
+   desc:'The pool table has its own room off the main floor, a spot for quick games between classes. [[Mention any other games in the room, such as ping pong, and when it gets busy.]] [[Name a tournament or tradition, if there is one.]]',
+   byRole:{},
+   tradition:{name:'[[Example: pool tournament]]', text:'[[Describe how it works and when it happens.]]'},
+   photos:[
+    {id:'pool-1', label:'Pool table', hot:[
+      nav(68,26,'up','To the library','tour-library'),
+      nav(26,40,'down','Back to the kitchen','tour-kitchen'),
+      info(90,38,'Pool table') ]},
+    {id:'pool-2', label:'Game room', hot:[ info(50,32,'Games') ]}
+   ]},
+  {id:'library', name:'Library', plan:'Library',
+   desc:'The library is the quiet room on the main floor. [[Describe the books, the desks and the quiet hours.]] [[Say how members use it during finals or study sessions.]]',
+   byRole:{},
+   tradition:{name:'[[Example: finals week study nights]]', text:'[[Describe the tradition.]]'},
+   photos:[
+    {id:'library-1', label:'Library', hot:[
+      nav(68,26,'up','To the apartment complex','tour-hall'),
+      nav(26,40,'down','Back to the pool table','tour-pool'),
+      info(90,38,'Quiet hours') ]},
+    {id:'library-2', label:'Library shelves and desks', hot:[ info(50,32,'Shelves') ]}
+   ]},
+  {id:'hall', name:'Hallways and stairs', plan:'Hallways and stairs',
+   desc:'The apartment complex holds the members\' rooms on three floors, linked by hallways and two staircases. [[Describe what is on the walls, such as awards or the chapter bulletin board.]] [[Add safety details parents ask about, such as exits, smoke detectors and quiet hours.]]',
+   byRole:{},
+   tradition:null,
+   photos:[
+    {id:'hall-1', label:'Main hallway', hot:[
+      nav(68,26,'up','To the member rooms','tour-rooms'),
+      nav(26,40,'down','Back to the main entry','tour-entry'),
+      info(90,38,'Bulletin board') ]},
+    {id:'hall-2', label:'Staircase', hot:[ info(50,32,'Staircases','[[Say how many staircases there are and which floors they reach.]]') ]}
+   ]},
+  {id:'rooms', name:'Member rooms', plan:'Member rooms',
+   desc:'Members live in rooms like these, spread across the three floors of the apartment complex. [[Describe room size, furniture and how many people share a room.]] [[Explain how members choose rooms each year.]]',
+   byRole:{},
+   tradition:{name:'[[Example: room selection each spring]]', text:'[[Describe how it works.]]'},
+   photos:[
+    {id:'rooms-1', label:'Member room A', hot:[
+      nav(68,26,'up','To the front porch','tour-porch'),
+      nav(26,40,'down','Back to the hallways','tour-hall'),
+      info(90,38,'Desk and storage') ]},
+    {id:'rooms-2', label:'Member room B', hot:[ info(50,32,'Window and bed') ]}
+   ]},
+  {id:'porch', name:'Front porch', plan:'Front porch',
+   desc:'The front porch runs along the front of the house, with the chapter letters above the door. [[Describe how the porch is used, such as hanging out or welcoming guests during recruitment.]] [[Name a tradition tied to the porch, if any.]]',
+   byRole:{},
+   tradition:{name:'[[Example: welcome table during recruitment]]', text:'[[Describe the tradition.]]'},
+   photos:[
+    {id:'porch-1', label:'Front porch and steps', hot:[
+      info(90,26,'Letters over the door','[[Say when the letters went up and what they mean to the chapter.]]'),
+      nav(22,26,'up','Inside to the main entry','tour-entry'),
+      nav(66,40,'down','Down to the front lawn','tour-lawn') ]},
+    {id:'porch-2', label:'Porch seating', hot:[ info(50,32,'Porch seating') ]},
+    {id:'porch-3', label:'Front door', hot:[ info(50,32,'Front door') ]}
+   ]},
+  {id:'lawn', name:'Front lawn', plan:'Front lawn',
+   desc:'The front lawn is where the chapter spends time outside. [[Describe yard games, events and parking.]] [[Name the biggest outdoor event of the year and when it happens.]]',
+   byRole:{},
+   tradition:{name:'[[Example: spring philanthropy event]]', text:'[[Describe the event and who comes.]]', highlight:true},
+   photos:[
+    {id:'lawn-1', label:'Front lawn', hot:[
+      nav(68,28,'up','Around the side to the backyard','tour-yard'),
+      nav(26,40,'down','Back to the front porch','tour-porch'),
+      info(90,40,'Yard games') ]},
+    {id:'lawn-2', label:'Lawn during an event', hot:[ info(50,32,'Event setup') ]}
+   ]},
+  {id:'yard', name:'Backyard and court', plan:'Backyard and court',
+   desc:'The backyard is the last stop on the tour, with a basketball court. [[Describe the grill, the seating or other space, and how members use it.]] [[Name a tradition held here and when it happens.]]',
+   byRole:{},
+   tradition:{name:'[[Example: end-of-semester cookout]]', text:'[[Describe what happens and who comes.]]', highlight:true},
+   photos:[
+    {id:'yard-1', label:'Backyard', hot:[
+      fin(68,26,'End of the tour'),
+      nav(26,40,'down','Back to the front lawn','tour-lawn'),
+      info(90,38,'Basketball court') ]},
+    {id:'yard-2', label:'Basketball court', hot:[ info(50,32,'Court') ]},
+    {id:'yard-3', label:'Backyard seating', hot:[ info(50,32,'Seating') ]}
+   ]}
+];
+
+/* ---------- helpers ---------- */
+const $=(s,r)=>(r||document).querySelector(s);
+const $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=s=>esc(s).replace(/\[\[(.+?)\]\]/g,(m,t)=>'<mark class="ph">['+t+']</mark>');
+const ic=(n,c)=>'<svg class="ic'+(c?' '+c:'')+'" aria-hidden="true"><use href="#i-'+n+'"/></svg>';
+const total=STOPS.length;
+
+const state={view:'home',stop:0,photo:0,visited:new Set(),role:null,older:false,note:null,cardOpen:true,hintSeen:false,lastRoute:null,lb:0};
+try{ const r=localStorage.getItem('gz-tour-role'); if(r && ROLES[r]) state.role=r; }catch(e){}
+
+function descFor(s){ return (state.role && s.byRole && s.byRole[state.role]) || s.desc; }
+
+function photoHTML(id,label,opts){
+  opts=opts||{};
+  const src=(opts.older?OLDER_IMAGES:IMAGES)[id];
+  if(src) return '<img class="img" src="'+esc(src)+'" alt="'+esc(label)+(opts.older?' (older photo)':'')+'">';
+  return '<div class="ph-photo'+(opts.older?' older':'')+'"><div class="ph-tag"><strong>'+(opts.older?'Older photo placeholder':'Photo placeholder')+'</strong><span>'+esc(label)+'</span><code>'+esc(id)+'</code></div></div>';
+}
+
+/* ---------- routing (plain #name hashes) ---------- */
+function parse(name){
+  if(name==='done') return {view:'done'};
+  const m=/^tour-([a-z]+)(?:-(\d+))?$/.exec(name||'');
+  if(m){
+    const i=STOPS.findIndex(s=>s.id===m[1]);
+    if(i>-1){ const n=Math.max(1,parseInt(m[2]||'1',10))-1; return {view:'tour',stop:i,photo:Math.min(n,STOPS[i].photos.length-1)}; }
+  }
+  return {view:'home'};
+}
+function applyRoute(name){
+  const p=parse(name);
+  const changed=state.lastRoute!==name;
+  state.lastRoute=name; state.view=p.view;
+  if(p.view==='tour'){
+    state.stop=p.stop; state.photo=p.photo; state.visited.add(STOPS[p.stop].id);
+    if(changed) state.note=null;
+  }
+  if(changed) $$('dialog[open]').forEach(d=>d.close());
+  render();
+  if(changed){
+    window.scrollTo(0,0);
+    const h=p.view==='tour'?$('#stop-title'):p.view==='done'?$('#done-title'):$('#home-title');
+    if(h) h.focus({preventScroll:true});
+  }
+}
+function go(name){
+  try{ if(location.hash!=='#'+name) location.hash=name; }catch(e){}
+  applyRoute(name);
+}
+window.addEventListener('hashchange',()=>applyRoute(location.hash.slice(1)));
+
+/* ---------- render ---------- */
+function render(){
+  const v=state.view;
+  $('#v-home').hidden=v!=='home';
+  $('#v-tour').hidden=v!=='tour';
+  $('#v-done').hidden=v!=='done';
+  $('#progress').hidden=v!=='tour';
+  $('#pager').hidden=v!=='tour';
+  document.body.classList.toggle('has-pager',v==='tour');
+  const rb=$('#btn-role');
+  rb.hidden=v==='home';
+  rb.textContent=state.role?ROLES[state.role].short:'Choose role';
+  rb.setAttribute('aria-label',state.role?'Visiting as '+ROLES[state.role].label+'. Change.':'Choose who is visiting');
+  syncRoles();
+  if(v==='home') renderHome();
+  if(v==='tour') renderTour();
+  if(v==='done') renderDone();
+}
+
+function renderHome(){
+  $('#meta-count').textContent=total+' stops, about 5 minutes. Go in order or jump to any room.';
+  $('#hero').innerHTML=photoHTML('hero','Google Maps screenshot of the house exterior')+
+    '<button class="spot nav l" style="left:54%;top:72%;--x:54" data-act="start" aria-label="Front door. Start the tour."><span class="ico">'+ic('up')+'</span><span class="lbl">Front door. Start the tour.</span></button>';
+}
+
+function spotHTML(s,i){
+  const flip=' '+(s.x<38?'r':s.x>62?'l':'b');
+  const pos='left:'+s.x+'%;top:'+s.y+'%;--x:'+s.x;
+  if(s.k==='nav') return '<button class="spot nav d-'+s.dir+flip+'" style="'+pos+'" data-act="spot" data-i="'+i+'" aria-label="'+esc(s.label)+'"><span class="ico">'+ic('up')+'</span><span class="lbl">'+esc(s.label)+'</span></button>';
+  if(s.k==='finish') return '<button class="spot finish'+flip+'" style="'+pos+'" data-act="spot" data-i="'+i+'" aria-label="'+esc(s.label)+'"><span class="ico">'+ic('flag')+'</span><span class="lbl">'+esc(s.label)+'</span></button>';
+  return '<button class="spot info" style="'+pos+'" data-act="spot" data-i="'+i+'" aria-label="More about '+esc(s.title)+'" aria-expanded="'+(state.note===i)+'"><span class="ico">i</span></button>';
+}
+
+function renderStage(){
+  const s=STOPS[state.stop], p=s.photos[state.photo], n=s.photos.length;
+  let h='<div class="stage-photo" data-act="enlarge">'+photoHTML(p.id,p.label,{older:state.older})+'</div>';
+  h+=p.hot.map(spotHTML).join('');
+  h+='<div class="card" id="card" data-open="'+state.cardOpen+'"><div class="card-head"><h1 id="stop-title" tabindex="-1">'+esc(s.name)+'</h1>'+
+     '<button class="card-toggle" data-act="card" aria-expanded="'+state.cardOpen+'" aria-controls="card-body" aria-label="'+(state.cardOpen?'Hide description':'Show description')+'">'+ic('chev-d')+'</button></div>'+
+     '<div class="card-body" id="card-body"><p class="desc">'+fmt(descFor(s))+'</p>'+
+     (s.tradition?'<p class="trad"><strong>Tradition</strong>'+fmt(s.tradition.name)+'</p>':'')+'</div></div>';
+  if(state.note!==null && p.hot[state.note] && p.hot[state.note].k==='info'){
+    const t=p.hot[state.note];
+    h+='<div class="note" role="status"><strong>'+esc(t.title)+'</strong><p>'+fmt(t.text)+'</p><button class="note-x" data-act="note-close" aria-label="Close note">'+ic('x')+'</button></div>';
+  }
+  $('#stage').innerHTML=h;
+  $('#stage-tools').innerHTML='<button class="sbtn" data-act="older" aria-pressed="'+state.older+'">'+ic('clock')+(state.older?'See current photos':'See older photos')+'</button><button class="sbtn" data-act="enlarge">'+ic('expand')+'Enlarge</button><span class="count">Photo '+(state.photo+1)+' of '+n+'</span>';
+  $('#tap-hint').textContent=state.hintSeen?'':'Tap the circles in the photo. Arrows take you to another room, and the "i" circles show details.';
+  $('#ph-note').innerHTML='<mark class="ph">Highlighted text</mark> is placeholder copy. Replace it in the STOPS list.';
+}
+
+function renderThumbs(){
+  const s=STOPS[state.stop];
+  $('#thumbs').innerHTML='<div class="thumbs" style="--n:'+s.photos.length+'">'+s.photos.map((p,i)=>{
+    const sel=i===state.photo;
+    return '<button class="thumb" data-act="thumb" data-i="'+i+'" aria-pressed="'+sel+'" aria-label="Show photo '+(i+1)+', '+esc(p.label)+'"><span class="thumb-img">'+photoHTML(p.id,p.label,{older:state.older})+'</span><span class="thumb-cap">'+esc(p.label)+'</span></button>';
+  }).join('')+'</div>';
+}
+
+function planHTML(){
+  const rooms=STOPS.map((s,i)=>{
+    const cur=state.view==='tour' && i===state.stop, vis=state.visited.has(s.id);
+    return '<button class="room'+(cur?' cur':vis?' vis':'')+'" style="grid-area:'+s.id+'" data-act="plan" data-id="'+s.id+'"'+(cur?' aria-current="step"':'')+'>'+
+      '<span class="rn" aria-hidden="true">'+(i+1)+'</span><span>'+esc(s.plan)+'</span>'+(s.id==='yard'?'<span class="court" aria-hidden="true"></span>':'')+
+      '<span class="rs" aria-hidden="true">'+(cur?ic('star'):vis?ic('check'):'')+'</span>'+
+      '<span class="sr-only">'+(cur?', you are here':vis?', visited':', not visited yet')+'</span></button>';
+  }).join('');
+  return '<div class="plan"><div class="plan-block"></div><div class="plan-apt"></div>'+rooms+
+    '<div class="plan-steps" aria-hidden="true">Front steps</div>'+
+    '<button class="start-here" data-act="start">'+ic('up')+'Start here</button>'+
+    '<ul class="legend"><li><span class="sw c">'+ic('star')+'</span>You are here</li><li><span class="sw v">'+ic('check')+'</span>Visited</li><li><span class="sw"></span>Not yet</li></ul>'+
+    '<span class="plan-cap">Apartment complex, 3 floors</span></div>';
+}
+function planCard(){
+  return '<div class="plan-card"><div class="plan-head"><h2>Floor plan</h2><span class="plan-count">'+state.visited.size+' of '+total+' visited</span></div>'+
+    '<p class="plan-help">Tap any room to go there. The front of the house is on the left. This layout is a sketch and not to scale.</p>'+planHTML()+'</div>';
+}
+function renderPlan(){ const h=planCard(); $('#plan-col').innerHTML=h; $('#sheet-plan').innerHTML=h; }
+
+function renderProgress(){
+  const i=state.stop, s=STOPS[i];
+  $('#prog-label').textContent='Stop '+(i+1)+' of '+total;
+  $('#prog-name').textContent=s.name;
+  $('#segs').style.setProperty('--n',total); $('#segs').innerHTML=STOPS.map((x,k)=>'<span class="seg'+(k===i?' c':state.visited.has(x.id)?' v':'')+'"></span>').join('');
+  $('#prog-right').innerHTML=state.visited.size===total
+    ? '<button class="btn primary sm" data-act="finish">Finish tour</button>'
+    : '<span class="prog-count">'+state.visited.size+' of '+total+' visited</span>';
+}
+
+function renderPager(){
+  const i=state.stop;
+  $('#pg-back').innerHTML=ic('chev-l')+'<span>'+(i===0?'Start':'Back')+'</span>';
+  $('#pg-back').setAttribute('aria-label',i===0?'Back to the start page':'Back to '+STOPS[i-1].name);
+  const last=i===total-1;
+  $('#pg-next').innerHTML='<span class="nx">'+(last?'<b>Finish tour</b>':'<small>Next</small><b>'+esc(STOPS[i+1].name)+'</b>')+'</span>'+ic(last?'check':'chev-r');
+  $('#pg-next').setAttribute('aria-label',last?'Finish the tour':'Next stop, '+STOPS[i+1].name);
+}
+
+function renderTour(){
+  renderStage(); renderThumbs(); renderPlan(); renderProgress(); renderPager();
+}
+
+/* ---------- contact ---------- */
+function contactHTML(){
+  return '<dl class="contact">'+CONTACT.map(c=>{
+    const ph=/^\[\[/.test(c.value), url=/^https?:\/\//.test(c.value);
+    const val=ph?fmt(c.value):url?'<a href="'+esc(c.value)+'" target="_blank" rel="noopener">'+esc(c.value)+'</a>':'<span class="cval">'+esc(c.value)+'</span>';
+    const copy=(!ph&&!url)?'<button class="copy" data-act="copy" data-v="'+esc(c.value)+'">'+ic('copy')+'Copy</button>':'';
+    return '<div class="crow"><dt>'+esc(c.label)+'</dt><dd>'+val+'</dd>'+copy+'</div>';
+  }).join('')+'</dl>';
+}
+
+/* ---------- done ---------- */
+function renderDone(){
+  const seen=state.visited.size, all=seen===total;
+  const unseen=STOPS.filter(s=>!state.visited.has(s.id));
+  const trads=STOPS.filter(s=>s.tradition && s.tradition.highlight);
+  const role=state.role?ROLES[state.role].label.toLowerCase():null;
+  let h='<div class="gutter"><div class="done">';
+  h+='<div class="done-top"><span class="badge-ok">'+ic('check')+'</span><h1 id="done-title" tabindex="-1">Tour complete</h1>';
+  h+='<p>'+(all?'You saw all '+total+' stops.':'You saw '+seen+' of '+total+' stops.')+(role?' Thanks for visiting, '+esc(role)+'.':'')+'</p>';
+  if(!all) h+='<p>Still unseen:</p><div class="unseen">'+unseen.map(s=>'<button class="btn sm" data-act="plan" data-id="'+s.id+'">'+esc(s.name)+'</button>').join('')+'</div>';
+  h+='</div><div class="done-grid">';
+  h+='<section class="recap"><h2>What the house does together</h2><ul class="trad-list">'+trads.map(s=>
+    '<li class="trad-item"><h3>'+fmt(s.tradition.name)+'</h3><p>'+fmt(s.tradition.text)+'</p><button class="link-btn" data-act="plan" data-id="'+s.id+'">See it at the '+esc(s.name.toLowerCase())+'</button></li>').join('')+'</ul></section>';
+  h+='<section class="learn" aria-labelledby="learn-title"><h2 id="learn-title">Want to learn more?</h2><p>Reach out and a member of the chapter will answer your questions.</p>'+contactHTML()+'</section>';
+  h+='</div><div class="done-actions"><button class="btn" data-act="again">Walk through again</button><button class="btn" data-act="home">Back to the start page</button></div>';
+  h+='</div></div>';
+  $('#v-done').innerHTML=h;
+}
+
+/* ---------- roles ---------- */
+function rolesHTML(name){
+  return Object.keys(ROLES).map(k=>'<label class="role"><input type="radio" name="'+name+'" value="'+k+'"><span>'+ic('check','tick')+esc(ROLES[k].label)+'</span></label>').join('');
+}
+function syncRoles(){
+  $$('input[name^="role-"]').forEach(i=>{ i.checked=i.value===state.role; });
+  const g=$('#greet'); g.textContent=state.role?ROLES[state.role].greeting:''; g.hidden=!state.role;
+}
+function setRole(k){
+  state.role=k;
+  try{ localStorage.setItem('gz-tour-role',k); }catch(e){}
+  render();
+}
+
+/* ---------- dialogs ---------- */
+function openDlg(d){ try{ d.showModal(); }catch(e){ d.setAttribute('open',''); } }
+function renderLb(){
+  const s=STOPS[state.stop], p=s.photos[state.lb], n=s.photos.length;
+  $('#lb-body').innerHTML=
+    '<div class="dlg-head"><h2>'+esc(s.name)+'</h2><button class="x" data-act="close" aria-label="Close photo viewer">'+ic('x')+'</button></div>'+
+    '<div class="lb-photo">'+photoHTML(p.id,p.label,{older:state.older})+'</div>'+
+    '<div class="lb-bar"><button class="btn" data-act="lb-prev" aria-label="Previous photo">'+ic('chev-l')+'</button>'+
+    '<div class="lb-cap">'+esc(p.label)+'<small>Photo '+(state.lb+1)+' of '+n+(state.older?', older photo':'')+'</small></div>'+
+    '<button class="btn" data-act="lb-next" aria-label="Next photo">'+ic('chev-r')+'</button></div>';
+}
+function openLb(i){ state.lb=i; renderLb(); openDlg($('#dlg-lb')); }
+$('#dlg-lb').addEventListener('close',()=>{ state.photo=state.lb; state.note=null; if(state.view==='tour'){ renderStage(); renderThumbs(); } });
+
+/* ---------- events ---------- */
+function step(d){
+  const i=state.stop+d;
+  if(i<0) return go('home');
+  if(i>=total) return go('done');
+  go('tour-'+STOPS[i].id);
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act]');
+  if(!t){
+    return;
+  }
+  const a=t.dataset.act;
+  switch(a){
+    case 'start': { const d=t.closest('dialog'); if(d) d.close(); go('tour-entry'); break; }
+    case 'home': go('home'); break;
+    case 'again': state.visited=new Set(); go('tour-entry'); break;
+    case 'finish': go('done'); break;
+    case 'next': step(1); break;
+    case 'back': step(-1); break;
+    case 'plan': { const d=t.closest('dialog'); if(d) d.close(); go('tour-'+t.dataset.id); break; }
+    case 'card': { state.cardOpen=!state.cardOpen; const c=$('#card'); c.dataset.open=state.cardOpen; t.setAttribute('aria-expanded',state.cardOpen); t.setAttribute('aria-label',state.cardOpen?'Hide description':'Show description'); break; }
+    case 'open-contact': $('#contact-body').innerHTML=contactHTML(); openDlg($('#dlg-contact')); break;
+    case 'open-role': openDlg($('#dlg-role')); break;
+    case 'open-map': renderPlan(); openDlg($('#dlg-map')); break;
+    case 'close': { const d=t.closest('dialog'); if(d) d.close(); break; }
+    case 'thumb': state.photo=+t.dataset.i; state.note=null; renderStage(); renderThumbs(); break;
+    case 'older': state.older=!state.older; renderStage(); renderThumbs(); break;
+    case 'enlarge': openLb(state.photo); break;
+    case 'note-close': state.note=null; renderStage(); break;
+    case 'lb-prev': { const n=STOPS[state.stop].photos.length; state.lb=(state.lb-1+n)%n; renderLb(); break; }
+    case 'lb-next': { const n=STOPS[state.stop].photos.length; state.lb=(state.lb+1)%n; renderLb(); break; }
+    case 'spot': {
+      const s=STOPS[state.stop].photos[state.photo].hot[+t.dataset.i];
+      state.hintSeen=true;
+      if(s.k==='nav') go(s.to);
+      else if(s.k==='finish') go('done');
+      else { state.note=(state.note===+t.dataset.i)?null:+t.dataset.i; renderStage(); const b=$('.spot.info[data-i="'+t.dataset.i+'"]'); if(b) b.focus({preventScroll:true}); }
+      break;
+    }
+    case 'copy': {
+      const v=t.dataset.v, orig=t.innerHTML;
+      const done=txt=>{ t.textContent=txt; setTimeout(()=>{ t.innerHTML=orig; },1600); };
+      try{ navigator.clipboard.writeText(v).then(()=>done('Copied'),()=>sel()); }catch(err){ sel(); }
+      function sel(){ const c=t.closest('.crow'), val=c&&c.querySelector('.cval'); if(val){ const r=document.createRange(); r.selectNodeContents(val); const g=getSelection(); g.removeAllRanges(); g.addRange(r); } done('Selected'); }
+      break;
+    }
+  }
+});
+['dlg-contact','dlg-role','dlg-map','dlg-lb'].forEach(id=>{
+  const d=document.getElementById(id);
+  d.addEventListener('click',e=>{ if(e.target===d) d.close(); });
+});
+document.addEventListener('change',e=>{
+  if(e.target.name && e.target.name.indexOf('role-')===0){
+    setRole(e.target.value);
+    const d=$('#dlg-role'); if(d.open) d.close();
+  }
+});
+document.addEventListener('keydown',e=>{
+  if(e.key!=='ArrowLeft' && e.key!=='ArrowRight') return;
+  if(e.altKey||e.ctrlKey||e.metaKey||e.shiftKey) return;
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select') return;
+  if($('#dlg-lb').open){ const n=STOPS[state.stop].photos.length; state.lb=(state.lb+(e.key==='ArrowRight'?1:-1)+n)%n; renderLb(); return; }
+  if($$('dialog[open]').length) return;
+  if(state.view==='tour') step(e.key==='ArrowRight'?1:-1);
+});
+
+/* ---------- start ---------- */
+$('#roles-home').innerHTML=rolesHTML('role-home');
+$('#roles-dlg').innerHTML=rolesHTML('role-dlg');
+applyRoute(location.hash.slice(1));
+})();
+</script>
+
+</body>
+</html>
